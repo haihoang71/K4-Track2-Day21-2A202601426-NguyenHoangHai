@@ -10,7 +10,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  # JOB 1: Chạy unit tests
+  # JOB 1: Unit tests
   unit-test:
     name: Unit Test
     runs-on: ubuntu-latest
@@ -27,19 +27,28 @@ jobs:
           pip install -r requirements.txt
           pip install dvc-s3
 
-      - name: Authenticate to Cloud Storage
-        run: |
-          AWS_KEY_ID=$(echo '${{ secrets.STORAGE_CREDENTIALS }}' | jq -r '.aws_access_key_id')
-          AWS_SECRET=$(echo '${{ secrets.STORAGE_CREDENTIALS }}' | jq -r '.aws_secret_access_key')
-          
-          echo "AWS_ACCESS_KEY_ID=$AWS_KEY_ID" >> $GITHUB_ENV
-          echo "AWS_SECRET_ACCESS_KEY=$AWS_SECRET" >> $GITHUB_ENV
-          echo "AWS_DEFAULT_REGION=ap-southeast-1" >> $GITHUB_ENV
-
       - name: Pull data with DVC
-        run: python -m dvc pull
+        env:
+          STORAGE_CREDENTIALS: ${{ secrets.STORAGE_CREDENTIALS }}
+          AWS_DEFAULT_REGION: ap-southeast-1
+        run: |
+          python - <<'PYEOF'
+          import os, json, subprocess
 
-  # JOB 2: Huấn luyện mô hình trên dữ liệu thực
+          creds_raw = os.environ.get("STORAGE_CREDENTIALS", "")
+          data = json.loads(creds_raw)
+
+          key_id = data.get("aws_access_key_id") or data.get("AWS_ACCESS_KEY_ID")
+          secret_key = data.get("aws_secret_access_key") or data.get("AWS_SECRET_ACCESS_KEY")
+
+          env = os.environ.copy()
+          env["AWS_ACCESS_KEY_ID"] = key_id
+          env["AWS_SECRET_ACCESS_KEY"] = secret_key
+
+          subprocess.run(["python", "-m", "dvc", "pull"], check=True, env=env)
+          PYEOF
+
+  # JOB 2: Train
   train:
     name: Train
     needs: unit-test
@@ -60,28 +69,26 @@ jobs:
           pip install -r requirements.txt
           pip install dvc-s3
 
-      - name: Authenticate to Cloud Storage
+      - name: Pull data with DVC
+        env:
+          STORAGE_CREDENTIALS: ${{ secrets.STORAGE_CREDENTIALS }}
+          AWS_DEFAULT_REGION: ap-southeast-1
         run: |
           python - <<'PYEOF'
-          import json, os
+          import os, json, subprocess
 
-          secret_raw = """${{ secrets.STORAGE_CREDENTIALS }}"""
-          try:
-              data = json.loads(secret_raw)
-              key_id = data.get("aws_access_key_id") or data.get("AWS_ACCESS_KEY_ID") or ""
-              secret_key = data.get("aws_secret_access_key") or data.get("AWS_SECRET_ACCESS_KEY") or ""
+          creds_raw = os.environ.get("STORAGE_CREDENTIALS", "")
+          data = json.loads(creds_raw)
 
-              github_env = os.environ.get("GITHUB_ENV")
-              with open(github_env, "a") as f:
-                  f.write(f"AWS_ACCESS_KEY_ID={key_id}\n")
-                  f.write(f"AWS_SECRET_ACCESS_KEY={secret_key}\n")
-                  f.write("AWS_DEFAULT_REGION=ap-southeast-1\n")
-              print("Successfully loaded AWS Credentials to GITHUB_ENV")
-          except Exception as e:
-              print(f"Error parsing STORAGE_CREDENTIALS JSON: {e}")
+          key_id = data.get("aws_access_key_id") or data.get("AWS_ACCESS_KEY_ID")
+          secret_key = data.get("aws_secret_access_key") or data.get("AWS_SECRET_ACCESS_KEY")
+
+          env = os.environ.copy()
+          env["AWS_ACCESS_KEY_ID"] = key_id
+          env["AWS_SECRET_ACCESS_KEY"] = secret_key
+
+          subprocess.run(["python", "-m", "dvc", "pull"], check=True, env=env)
           PYEOF
-      - name: Pull data with DVC
-        run: python -m dvc pull
 
       - name: Train model
         run: python src/train.py
@@ -93,13 +100,25 @@ jobs:
           echo "f1=$F1" >> $GITHUB_OUTPUT
 
       - name: Upload model to Cloud Storage
+        env:
+          STORAGE_CREDENTIALS: ${{ secrets.STORAGE_CREDENTIALS }}
         run: |
           python - <<'PYEOF'
-          import os
-          import boto3
+          import os, json, boto3
 
+          creds_raw = os.environ.get("STORAGE_CREDENTIALS", "")
+          data = json.loads(creds_raw)
+
+          key_id = data.get("aws_access_key_id") or data.get("AWS_ACCESS_KEY_ID")
+          secret_key = data.get("aws_secret_access_key") or data.get("AWS_SECRET_ACCESS_KEY")
           bucket_name = "${{ secrets.ARTIFACT_BUCKET }}"
-          s3_client = boto3.client("s3")
+
+          s3_client = boto3.client(
+              "s3",
+              aws_access_key_id=key_id,
+              aws_secret_access_key=secret_key,
+              region_name="ap-southeast-1"
+          )
           s3_client.upload_file(
               "models/model.joblib",
               bucket_name,
@@ -114,7 +133,7 @@ jobs:
           name: report
           path: outputs/report.json
 
-  # JOB 3: Kiểm tra chất lượng
+  # JOB 3: Quality Gate
   quality-gate:
     name: Quality Gate
     needs: train
@@ -136,7 +155,7 @@ jobs:
           print("Quality Gate PASSED!")
           PYEOF
 
-  # JOB 4: Triển khai
+  # JOB 4: Release
   release:
     name: Release
     needs: quality-gate
