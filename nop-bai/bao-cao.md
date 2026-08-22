@@ -13,35 +13,31 @@ HƯỚNG DẪN - đọc rồi XÓA TOÀN BỘ các khối chú thích này sau k
 
 | | |
 |---|---|
-| Họ và tên | ___ |
-| MSSV | ___ |
+| Họ và tên | Nguyễn Hoàng Hải |
+| MSSV | 2A202601426 |
 | Lớp / Khóa | K4 |
-| Repo GitHub | https://github.com/___/___ |
-| Ngày nộp | ___ |
+| Repo GitHub | https://github.com/haihoang71/K4-Track2-Day21-2A202601426-NguyenHoangHai |
+| Ngày nộp | 21/08/2026 |
 
 ---
 
 ## 1. Bộ Siêu Tham Số Đã Chọn và Lý Do
 
-<!-- Khoảng 120 - 150 từ. Điền kết quả thật từ MLflow UI ở Bước 1, tối thiểu 3 lần chạy. -->
 
 | Lần chạy | n_estimators | learning_rate | max_depth | f1_score | accuracy |
 |---|---|---|---|---|---|
-| 1 | ___ | ___ | ___ | ___ | ___ |
-| 2 | ___ | ___ | ___ | ___ | ___ |
-| 3 | ___ | ___ | ___ | ___ | ___ |
+| 1 | 200 | 0.1 | 5 | 0.7149 | 0.874 |
+| 2 | 100 | 0.1 | 3 | 0.7109 | 0.878 |
+| 3 | 50 | 0.5 | 2 | 0.7048 | 0.876 |
+| 4 | 200 | 0.2 | 10 | 0.7009 | 0.860 |
+| 5 | 50 | 0.5 | 10 | 0.6463 | 0.838 |
 
-**Bộ siêu tham số đã chọn:** `n_estimators=___`, `learning_rate=___`, `max_depth=___`.
+**Bộ siêu tham số đã chọn:** `n_estimators=200`, `learning_rate=0.1`, `max_depth=5`.
 
-**Lý do:** ___
-
-<!--
-Trả lời trong phần Lý do:
-  - Vì sao bộ này tốt hơn các bộ còn lại (dựa trên f1_score, không phải accuracy)?
-  - Lần chạy có accuracy cao nhất có trùng với lần có f1_score cao nhất không?
-    Nếu không, điều đó nói lên điều gì?
-  - Bạn quan sát thấy đánh đổi nào giữa n_estimators và learning_rate?
--->
+**Lý do:** 
+* **So sánh theo F1-score:** Bộ siêu tham số này đạt chỉ số `f1_score` cao nhất (0.7149) trong tất cả các lần chạy. Điểm F1 cao vượt trội cho thấy mô hình đạt được sự cân bằng tối ưu giữa Precision (độ chính xác) và Recall (độ phủ), đặc biệt hiệu quả nếu tập dữ liệu có sự mất cân bằng giữa các lớp (class imbalance) — điều mà chỉ số `accuracy` đơn thuần không phản ánh hết được.
+* **Mối quan hệ giữa Accuracy và F1-score:** Lần chạy có `accuracy` cao nhất là lần 2 (`accuracy` = 0.878), **không trùng** với lần chạy có `f1_score` cao nhất là lần 1 (`accuracy` = 0.874). Điều này chỉ ra rằng dữ liệu có hiện tượng lệch lớp (imbalanced data). Lần chạy 2 đạt `accuracy` cao hơn có thể do mô hình dự đoán tốt ở lớp đa số, nhưng xét về khả năng nhận diện lớp thiểu số/lớp mục tiêu thì lần chạy 1 mới là mô hình toàn diện và hữu ích hơn.
+* **Sự đánh đổi (trade-off) giữa `n_estimators` và `learning_rate`:** Qua quan sát các lần chạy, khi sử dụng `learning_rate` nhỏ (0.1) kết hợp với `n_estimators` đủ lớn (100–200), mô hình học từng bước cẩn thận và đạt hiệu năng tối ưu nhất. Ngược lại, khi tăng `learning_rate` lên cao (0.5) nhưng giảm `n_estimators` xuống (50) ở lần 3 và 5, mô hình tiến tới nghiệm quá nhanh dẫn đến giảm cả `f1_score` lẫn `accuracy`, đặc biệt tồi tệ khi kết hợp với `max_depth` lớn (lần 5 gây overfit nghiêm trọng).
 
 ---
 
