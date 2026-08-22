@@ -33,6 +33,8 @@ def train(
 
     df_train = pd.read_csv(data_path)
     df_eval  = pd.read_csv(eval_path)
+    
+    mlflow.set_tracking_uri("file:./mlruns")
 
     X_train = df_train.drop(columns=["target"])
     y_train = df_train["target"]
