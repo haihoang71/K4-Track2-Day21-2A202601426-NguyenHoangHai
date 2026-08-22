@@ -27,9 +27,13 @@ jobs:
           pip install -r requirements.txt
           pip install dvc-s3
 
-      - name: Run tests
-        # TODO 2.11.1
-        run: pytest tests/ -v
+      - name: Pull data from DVC
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-southeast-1
+        run: |
+          python -m dvc pull
 
   # JOB 2: Huấn luyện mô hình trên dữ liệu thực, upload artifact lên cloud storage
   train:
