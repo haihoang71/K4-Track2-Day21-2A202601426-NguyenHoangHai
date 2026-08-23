@@ -43,54 +43,34 @@ HƯỚNG DẪN - đọc rồi XÓA TOÀN BỘ các khối chú thích này sau k
 
 ## 2. Vì Sao Ngưỡng Chất Lượng Đặt Trên F1 Chứ Không Phải Accuracy
 
-<!-- Khoảng 120 - 150 từ. -->
+Tập dữ liệu dự đoán thu nhập bị lệch lớp nghiêm trọng (imbalanced dataset), khi nhóm có thu nhập cao (>50K) chỉ chiếm khoảng 24%, còn nhóm thu nhập thấp (<=50K) chiếm tới 76%. Nếu xây dựng một mô hình ngây thơ (naive model) luôn luôn dự đoán mọi mẫu là "thu nhập thấp", mô hình này vẫn đạt độ chính xác (Accuracy) lên tới 76%. Con số này gây hiểu nhầm lớn vì mô hình hoàn toàn thất bại trong việc phát hiện nhóm thu nhập cao.
 
-___
-
-<!--
-Cần nêu được:
-  - Phân bố lớp của tập dữ liệu (tỷ lệ lớp thu nhập > 50K) và hệ quả của nó.
-  - Accuracy của một mô hình luôn trả lời "thu nhập thấp" là bao nhiêu, vì sao con số
-    đó gây hiểu nhầm.
-  - F1 của lớp dương đo điều gì mà accuracy không đo được.
-  - Vì sao KHÔNG dùng average="weighted" hay average="macro" khi gọi f1_score.
--->
+Chỉ số F1-Score của lớp dương (lớp >50K) khắc phục điều này bằng cách dung hòa giữa Precision (độ chính xác khi dự đoán lớp >50K) và Recall (khả năng không bỏ sót người có thu nhập cao). Chúng ta không dùng average="macro" hay average="weighted" vì các cách tính này sẽ kéo chỉ số F1 lên cao nhờ trọng số của lớp đa số (<=50K), làm che khuất hiệu năng thực tế trên lớp mục tiêu.
 
 ---
 
 ## 3. Khó Khăn Gặp Phải và Cách Giải Quyết
 
-<!-- Nêu 2 - 3 khó khăn thật, mỗi ô một câu ngắn. -->
-
 | Khó khăn | Nguyên nhân | Cách giải quyết |
 |---|---|---|
-| ___ | ___ | ___ |
-| ___ | ___ | ___ |
-| ___ | ___ | ___ |
-
+| Pipeline báo lỗi kết nối S3 ở bước DVC Pull | Runner thiếu AWS Credentials do secret chưa được truyền hoặc parse chưa đúng dạng JSON | Tách secret thành 2 biến `AWS_ACCESS_KEY_ID` và `AWS_SECRET_ACCESS_KEY` riêng biệt trong Repository Secrets |
+| Mất kết nối (timeout/refused) khi `curl` API từ máy local | AWS Security Group của EC2 mặc định chặn các port không phải SSH (port 22) | Thêm Inbound Rule cho Custom TCP trên port `8000` với source `0.0.0.0/0` |
+| Lỗi `ModuleNotFoundError: No module named 'boto3'` ở bước upload model | Môi trường runner GitHub Actions chưa được cài đặt thư viện `boto3` | Bổ sung `boto3` vào câu lệnh `pip install` ở bước `Install dependencies` trong file YAML |
 ---
 
 ## 4. So Sánh Bước 2 và Bước 3 (bắt buộc, 2 - 3 câu)
 
-<!-- Lấy số liệu từ bảng ở mục 3.6 của tasks/buoc-3.md. -->
-
 | | f1_score | accuracy |
 |---|---|---|
-| Bước 2 (chỉ `train_batch1`) | ___ | ___ |
-| Bước 3 (thêm `train_batch2`) | ___ | ___ |
+| Bước 2 (chỉ `train_batch1`) | **0.714** | **0.874** |
+| Bước 3 (thêm `train_batch2`) | **0.735** | **0.882** |
 
-**Nhận xét:** ___
-
-<!--
-Một câu trả lời trung thực kiểu "f1 giảm 0,01 vì dữ liệu mới cùng phân phối, không mang
-thêm thông tin mới" được đánh giá cao hơn kết luận sai rằng thêm dữ liệu luôn tốt hơn.
--->
+**Nhận xét:** Khi bổ sung thêm `train_batch2` (tăng gấp đôi dữ liệu lên 44.722 mẫu), F1-score tăng nhẹ từ 0.714 lên 0.735 và Accuracy tăng từ 0.874 lên 0.882. Sự cải thiện nhỏ này cho thấy hai tập dữ liệu được chia ngẫu nhiên từ cùng một phân phối gốc nên không mang thêm nhiều thông tin đột biến, tuy nhiên lượng dữ liệu lớn hơn vẫn giúp mô hình tối ưu hóa ranh giới phân loại tốt hơn một chút. Quan trọng nhất, Bước 3 đã chứng minh quy trình MLOps CI/CD hoạt động hoàn toàn tự động và tin cậy: từ lúc commit dữ liệu mới đến khi mô hình được huấn luyện và deploy lên EC2 mà không cần thao tác thủ công.
 
 ---
 
 ## 5. Phần Bonus Đã Thực Hiện (nếu có)
 
-<!-- Xóa cả mục 5 nếu không làm bonus. Mỗi bonus tối đa 1 dòng. -->
 
 - [ ] Bonus 1 - Tracking MLflow từ xa với DagsHub: ___
 - [ ] Bonus 2 - Điều chỉnh ngưỡng quyết định: ___
