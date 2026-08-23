@@ -66,14 +66,3 @@ Chỉ số F1-Score của lớp dương (lớp >50K) khắc phục điều này 
 | Bước 3 (thêm `train_batch2`) | **0.735** | **0.882** |
 
 **Nhận xét:** Khi bổ sung thêm `train_batch2` (tăng gấp đôi dữ liệu lên 44.722 mẫu), F1-score tăng nhẹ từ 0.714 lên 0.735 và Accuracy tăng từ 0.874 lên 0.882. Sự cải thiện nhỏ này cho thấy hai tập dữ liệu được chia ngẫu nhiên từ cùng một phân phối gốc nên không mang thêm nhiều thông tin đột biến, tuy nhiên lượng dữ liệu lớn hơn vẫn giúp mô hình tối ưu hóa ranh giới phân loại tốt hơn một chút. Quan trọng nhất, Bước 3 đã chứng minh quy trình MLOps CI/CD hoạt động hoàn toàn tự động và tin cậy: từ lúc commit dữ liệu mới đến khi mô hình được huấn luyện và deploy lên EC2 mà không cần thao tác thủ công.
-
----
-
-## 5. Phần Bonus Đã Thực Hiện (nếu có)
-
-
-- [ ] Bonus 1 - Tracking MLflow từ xa với DagsHub: ___
-- [ ] Bonus 2 - Điều chỉnh ngưỡng quyết định: ___
-- [ ] Bonus 3 - Báo cáo precision / recall tự động: ___
-- [ ] Bonus 4 - Hoàn trả về phiên bản trước: ___
-- [ ] Bonus 5 - Cảnh báo lệch lạc dữ liệu: ___
